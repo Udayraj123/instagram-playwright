@@ -1,0 +1,22 @@
+# Any directory starting with a dot
+**/\.*/
+# Except .github
+!.github/
+
+# Misc
+**/.DS_Store
+
+.env
+.env.js
+**/node_modules
+/test-results/
+/playwright-report/
+/playwright/.cache/
+
+**/auth.json
+photos/*
+!photos/.gitkeep
+
+yarn-error.log
+cron/create-post.log
+cron/cron-triggers.log

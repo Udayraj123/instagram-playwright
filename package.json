@@ -1,0 +1,20 @@
+{
+  "name": "insta-playwright",
+  "version": "1.0.0",
+  "description": "Automated posts on instagram with playwright",
+  "main": "index.js",
+  "scripts": {
+    "sync-photos": "yarn playwright test sync-photos --headed --reporter=line",
+    "login": "yarn playwright test login --headed --reporter=line",
+    "create-post": "yarn playwright test create-post --headed --reporter=line"
+  },
+  "author": "udayraj123",
+  "license": "ISC",
+  "dependencies": {
+    "file-type": "^18.5.0",
+    "lodash.clonedeep": "^4.5.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.36.2"
+  }
+}
