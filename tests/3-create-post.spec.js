@@ -18,11 +18,19 @@ test("Create a new post", async ({ page }) => {
     // Note: Every run of this attempt should create a single post with a chunk of 3 images starting from the last posted date
     const currentSyncData = await loadSyncData();
     console.log(`\n\tAttempting post number: ${postNumber}`);
-    const { meta: currentMeta, syncStatus, photosOrder } = cloneDeep(currentSyncData);
+    const {
+      meta: currentMeta,
+      syncStatus,
+      photosOrder,
+    } = cloneDeep(currentSyncData);
     const today = new Date();
     const { checkpoints: currentCheckpoints = [], lastPostedOn } = currentMeta;
-    const lastCheckpointOn = currentCheckpoints.length >= POSTS_PER_DAY ? currentCheckpoints[currentCheckpoints.length - POSTS_PER_DAY] : null;
-    const GAP_BETWEEN_POSTS_HOURS = GAP_BETWEEN_POSTS_MILLISECONDS/(60*1000*60);
+    const lastCheckpointOn =
+      currentCheckpoints.length >= POSTS_PER_DAY
+        ? currentCheckpoints[currentCheckpoints.length - POSTS_PER_DAY]
+        : null;
+    const GAP_BETWEEN_POSTS_HOURS =
+      GAP_BETWEEN_POSTS_MILLISECONDS / (60 * 1000 * 60);
     if (
       lastCheckpointOn &&
       today - new Date(lastCheckpointOn) < GAP_BETWEEN_POSTS_MILLISECONDS
@@ -38,7 +46,7 @@ test("Create a new post", async ({ page }) => {
     );
     console.log(`Filtering out unposted photos...`);
     const photosToPost = [];
-    // TODO: find a better way for file order than Object.entries()
+
     photosOrder.forEach((photoUrl) => {
       const { postedOn, filepath } = syncStatus[photoUrl];
       if (!postedOn && photosToPost.length < MAX_PHOTOS_IN_POST) {
@@ -108,18 +116,25 @@ test("Create a new post", async ({ page }) => {
     console.log("Loading instagram profile page...");
     await page.goto(INSTAGRAM_PROFILE_URL);
     await page.waitForLoadState("networkidle");
-    console.log(`Saving profile screenshot at: ${PROFILE_SCREENSHOT_PATH}/profile-after-post.png`);
+    console.log(
+      `Saving profile screenshot at: ${PROFILE_SCREENSHOT_PATH}/profile-after-post.png`
+    );
     // fixed path for cron
-    await page.screenshot({ path: `${PROFILE_SCREENSHOT_PATH}/profile-after-post.png`, fullPage: true });
+    await page.screenshot({
+      path: `${PROFILE_SCREENSHOT_PATH}/profile-after-post.png`,
+      fullPage: true,
+    });
+    
     // include post-time for record keeping
-    await page.screenshot({ path: `${PROFILE_SCREENSHOT_PATH}/profile-${today}.png`, fullPage: true });
+    await page.screenshot({
+      path: `${PROFILE_SCREENSHOT_PATH}/profile-${today}.png`,
+      fullPage: true,
+    });
 
-    // TODO:  Save updated login session if needed
     console.log(`Saving logged in session to: ${LOGIN_STORAGE_PATH}`);
     await page.context().storageState({
       path: LOGIN_STORAGE_PATH,
     });
     await page.waitForTimeout(getRandomTimeout());
   }
-  // TODO: use node-notifier to trigger notifications of the cron job
 });
