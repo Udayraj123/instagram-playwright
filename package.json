@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "sync-photos": "yarn playwright test sync-photos --reporter=line",
-    "login": "yarn playwright test login --reporter=line",
+    "save-login": "yarn playwright test login --reporter=line",
     "create-post": "yarn playwright test create-post --reporter=line"
   },
   "author": "udayraj123",

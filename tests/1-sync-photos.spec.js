@@ -39,9 +39,12 @@ test("Sync new images from photos album", async ({ page }) => {
   const { photosOrder } = cloneDeep(currentSyncData);
 
   let scrollY = 0,
-    totalPhotoUrlsSet = new Set(photosOrder);
-  console.log(`Loaded current sync data for ${totalPhotoUrlsSet.size} photos`);
-
+    totalPhotoUrlsSet = new Set(photosOrder), photoIndex = totalPhotoUrlsSet.size;
+  console.log(`Loaded current sync data for ${totalPhotoUrlsSet.size}/${MAX_PHOTOS_SYNC} photos`);
+  if (MAX_PHOTOS_SYNC < totalPhotoUrlsSet.size) {
+    console.log(`Already loaded more photos than MAX_PHOTOS_SYNC. Please increase the constant value.`);
+    return;
+  }
   console.log("Loading the photos album page...");
   await page.goto(PHOTOS_ALBUM_PUBLIC_URL);
 
@@ -60,8 +63,7 @@ test("Sync new images from photos album", async ({ page }) => {
   while (scrollY < totalScrollY && totalPhotoUrlsSet.size < MAX_PHOTOS_SYNC) {
     scrollY += 500;
     console.log(
-      `Scrolling page to: ${scrollY}px/${totalScrollY}px (${
-        (scrollY * 100) / totalScrollY
+      `Scrolling page to: ${scrollY}px/${totalScrollY}px (${Math.round((scrollY * 100) / totalScrollY)
       }%)`
     );
     // await page.evaluate(scroll, {direction: "down", speed: "slow", log: console.log});
@@ -118,36 +120,39 @@ test("Sync new images from photos album", async ({ page }) => {
     const { meta, syncStatus, photosOrder } = cloneDeep(currentSyncData);
     console.log("Checking new photos...");
 
-    await Promise.all(
-      newPhotoUrls.map(async (photoUrl, index) => {
-        // Check data presence
-        if (syncStatus.hasOwnProperty(photoUrl)) {
-          // Check file presence for warning
-          console.log(
-            `Unexpected: File data already present for photo: ${syncStatus[photoUrl].filepath}`
-          );
-        } else {
-          // Create fresh entry if not locally present
-          console.log(`Downloading photo from: ${photoUrl}`);
-          try {
-            const filepath = await downloadPhoto(photoUrl, index);
-            // Note: order of insertion not maintained here
-            syncStatus[photoUrl] = { filepath, downloadedOn: today, index };
-            photosOrder.push(photoUrl);
-          } catch (e) {
-            console.log(`Error fetching url: ${photoUrl}. Continuing...`);
-            console.error(e);
-          }
+    for (const photoUrl of newPhotoUrls) {
+      // Check data presence
+      if (syncStatus.hasOwnProperty(photoUrl)) {
+        // Check file presence for warning
+        console.log(
+          `Unexpected: File data already present for photo: ${syncStatus[photoUrl].filepath}`
+        );
+      } else {
+        // Create fresh entry if not locally present
+        console.log(`Downloading photo from: ${photoUrl}`);
+        try {
+          const filepath = await downloadPhoto(photoUrl, photoIndex);
+          // Note: order of insertion not maintained here
+          syncStatus[photoUrl] = { filepath, downloadedOn: today, photoIndex };
+          photoIndex++;
+          photosOrder.push(photoUrl);
+        } catch (e) {
+          console.log(`Error fetching url: ${photoUrl}. Continuing...`);
+          console.error(e);
         }
-      })
-    );
+      }
+    }
+    const orderedSyncStatus = {};
+    photosOrder.forEach((photoUrl) => {
+      orderedSyncStatus[photoUrl] = syncStatus[photoUrl];
+    });
 
     console.log(
-      `Saving updated photos data... Photos count: ${photosOrder.length}/${MAX_PHOTOS_SYNC}`
+      `Saving updated photos data... Photos count: ${photosOrder.length}/${MAX_PHOTOS_SYNC} (${Math.round(100 * photosOrder.length / MAX_PHOTOS_SYNC)}%)`
     );
     saveSyncData({
       ...currentSyncData,
-      syncStatus,
+      syncStatus: orderedSyncStatus,
       photosOrder,
       meta: {
         ...meta,
