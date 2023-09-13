@@ -31,6 +31,7 @@ function init_script() {
     # Script start
     SCRIPT_START_EPOCH=$(date +%s)
     # Create log files if not present
+    cd $INSTAGRAM_PLAYWRIGHT_PATH
     touch $CREATE_POST_LOGS_RELATIVE_PATH
     touch $CRON_LOGS_PATH
 }
@@ -70,7 +71,7 @@ if [[ "$RET" == "0" ]]; then
         exit 0
     else
         _sys_notify "Instagram Job: Completed" "Date and time: $(date +"$LOG_DATE_FORMAT"). Check logs at $CREATE_POST_LOGS_RELATIVE_PATH"
-        osascript -e 'tell application "Finder"' -e 'open file "$OSA_SCRIPT_PROFILE_AFTER_POST_PATH"' -e 'end tell'
+        osascript -e 'tell application "Finder"' -e "open file \"$OSA_SCRIPT_PROFILE_AFTER_POST_PATH\"" -e 'end tell'
         # Update successful run date and time-
         echo "$LOG_CRON_SUCCESS_TIME_PREFIX$(date +"$LOG_DATE_FORMAT")" >>"$CRON_LOGS_PATH"
     fi
