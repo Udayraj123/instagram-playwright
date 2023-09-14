@@ -9,7 +9,7 @@ import {
 import { INSTAGRAM_PROFILE_URL } from "../.env";
 import { loadSyncData, saveSyncData, getRandomTimeout } from "./utils";
 import cloneDeep from "lodash.clonedeep";
-test.setTimeout(120000);
+test.setTimeout(240000);
 test.use({
   storageState: LOGIN_STORAGE_PATH,
 });
@@ -124,7 +124,7 @@ test("Create a new post", async ({ page }) => {
       path: `${PROFILE_SCREENSHOT_PATH}/profile-after-post.png`,
       fullPage: true,
     });
-    
+
     // include post-time for record keeping
     await page.screenshot({
       path: `${PROFILE_SCREENSHOT_PATH}/profile-${today}.png`,

@@ -39,10 +39,15 @@ test("Sync new images from photos album", async ({ page }) => {
   const { photosOrder } = cloneDeep(currentSyncData);
 
   let scrollY = 0,
-    totalPhotoUrlsSet = new Set(photosOrder), photoIndex = totalPhotoUrlsSet.size;
-  console.log(`Loaded current sync data for ${totalPhotoUrlsSet.size}/${MAX_PHOTOS_SYNC} photos`);
+    totalPhotoUrlsSet = new Set(photosOrder),
+    photoIndex = totalPhotoUrlsSet.size;
+  console.log(
+    `Loaded current sync data for ${totalPhotoUrlsSet.size}/${MAX_PHOTOS_SYNC} photos`
+  );
   if (MAX_PHOTOS_SYNC < totalPhotoUrlsSet.size) {
-    console.log(`Already loaded more photos than MAX_PHOTOS_SYNC. Please increase the constant value.`);
+    console.log(
+      `Already loaded more photos than MAX_PHOTOS_SYNC. Please increase the constant value.`
+    );
     return;
   }
   console.log("Loading the photos album page...");
@@ -63,8 +68,9 @@ test("Sync new images from photos album", async ({ page }) => {
   while (scrollY < totalScrollY && totalPhotoUrlsSet.size < MAX_PHOTOS_SYNC) {
     scrollY += 500;
     console.log(
-      `Scrolling page to: ${scrollY}px/${totalScrollY}px (${Math.round((scrollY * 100) / totalScrollY)
-      }%)`
+      `Scrolling page to: ${scrollY}px/${totalScrollY}px (${Math.round(
+        (scrollY * 100) / totalScrollY
+      )}%)`
     );
     // await page.evaluate(scroll, {direction: "down", speed: "slow", log: console.log});
     // move into a scrollable area
@@ -148,7 +154,11 @@ test("Sync new images from photos album", async ({ page }) => {
     });
 
     console.log(
-      `Saving updated photos data... Photos count: ${photosOrder.length}/${MAX_PHOTOS_SYNC} (${Math.round(100 * photosOrder.length / MAX_PHOTOS_SYNC)}%)`
+      `Saving updated photos data... Photos count: ${
+        photosOrder.length
+      }/${MAX_PHOTOS_SYNC} (${Math.round(
+        (100 * photosOrder.length) / MAX_PHOTOS_SYNC
+      )}%)`
     );
     saveSyncData({
       ...currentSyncData,

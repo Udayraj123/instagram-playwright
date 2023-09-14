@@ -17,6 +17,4 @@
 photos/*
 !photos/.gitkeep
 
-yarn-error.log
-cron/create-post.log
-cron/cron-triggers.log
+**/*.log

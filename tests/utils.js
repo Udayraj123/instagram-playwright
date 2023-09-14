@@ -20,10 +20,10 @@ export const loadSyncData = async () => {
 
 export const getDifference = (set1, set2) => {
   const difference = new Set();
-  set1.forEach(element => {
-      if (!set2.has(element)) {
-          difference.add(element);
-      }
+  set1.forEach((element) => {
+    if (!set2.has(element)) {
+      difference.add(element);
+    }
   });
   return difference;
 };

@@ -33,10 +33,10 @@ test("Login to instagram", async ({ page }) => {
   await page.getByRole("button", { name: "Log in", exact: true }).click();
 
   try {
-    await page.waitForURL("**/challenge/**", { timeout: 1000 });
+    await page.waitForURL("**/challenge/**", { timeout: 3000 });
     await page.screenshot({ path: "photos/login-captcha.png", fullPage: true });
     console.log(`Captcha page detected. Aborting...`);
-    return
+    return;
   } catch (e) {
     console.log(`No Captcha page detected. Continuing...`);
   }
