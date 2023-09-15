@@ -68,7 +68,7 @@ TIME_FOR_SCRIPT=$((SCRIPT_END_EPOCH - SCRIPT_START_EPOCH))
 
 if [[ "$RET" == "0" ]]; then
     if [[ "$TIME_FOR_SCRIPT" -lt "$MIN_SECONDS_FOR_SCRIPT_SUCCESS" ]]; then
-        _sys_notify "Instagram Job: Already Posted"
+        _sys_notify "Instagram Job: Already Posted or Login Error"
         exit 0
     else
         _sys_notify "Instagram Job: Completed" "Date and time: $(date +"$LOG_DATE_FORMAT"). Check logs at $CREATE_POST_LOGS_RELATIVE_PATH"

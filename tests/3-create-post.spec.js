@@ -65,7 +65,19 @@ test("Create a new post", async ({ page }) => {
     await page.goto(INSTAGRAM_PROFILE_URL);
 
     await page.waitForLoadState("domcontentloaded");
-    await page.getByRole("link", { name: "New post Create" }).click();
+
+    // Detect if login storage load was successful
+    try {
+      await page.getByRole("link", { name: "New post Create" }).click({timeout: 3000});
+      console.log(`Create post option visible. Continuing...`);
+    } catch (e) {
+      console.log(`Login session might have expired. Please login again.`);
+      await page.screenshot({
+        path: "photos/create-post-login-expired.png",
+        fullPage: true,
+      });
+      return;
+    }
 
     await page.waitForTimeout(getRandomTimeout());
     console.log("Filling post data...");
