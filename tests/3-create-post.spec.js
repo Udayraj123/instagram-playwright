@@ -1,12 +1,12 @@
 import { test } from "@playwright/test";
 import {
-  GAP_BETWEEN_POSTS_MILLISECONDS,
+  GAP_BETWEEN_POSTS_SECONDS,
   LOGIN_STORAGE_PATH,
   MAX_PHOTOS_IN_POST,
-  POSTS_PER_DAY,
-  PROFILE_SCREENSHOT_PATH,
+  POSTS_PER_TRIGGER,
+  SCREENSHOTS_DIRECTORY,
 } from "./constants";
-import { INSTAGRAM_PROFILE_URL } from "../.env";
+import { INSTAGRAM_PROFILE_URL } from "../local/data/.env";
 import { loadSyncData, saveSyncData, getRandomTimeout } from "./utils";
 import cloneDeep from "lodash.clonedeep";
 test.setTimeout(240000);
@@ -14,7 +14,7 @@ test.use({
   storageState: LOGIN_STORAGE_PATH,
 });
 test("Create a new post", async ({ page }) => {
-  for (let postNumber = 0; postNumber < POSTS_PER_DAY; postNumber++) {
+  for (let postNumber = 0; postNumber < POSTS_PER_TRIGGER; postNumber++) {
     // Note: Every run of this attempt should create a single post with a chunk of 3 images starting from the last posted date
     const currentSyncData = await loadSyncData();
     console.log(`\n\tAttempting post number: ${postNumber}`);
@@ -26,14 +26,13 @@ test("Create a new post", async ({ page }) => {
     const today = new Date();
     const { checkpoints: currentCheckpoints = [], lastPostedOn } = currentMeta;
     const lastCheckpointOn =
-      currentCheckpoints.length >= POSTS_PER_DAY
-        ? currentCheckpoints[currentCheckpoints.length - POSTS_PER_DAY]
+      currentCheckpoints.length >= POSTS_PER_TRIGGER
+        ? currentCheckpoints[currentCheckpoints.length - POSTS_PER_TRIGGER]
         : null;
-    const GAP_BETWEEN_POSTS_HOURS =
-      GAP_BETWEEN_POSTS_MILLISECONDS / (60 * 1000 * 60);
+    const GAP_BETWEEN_POSTS_HOURS = GAP_BETWEEN_POSTS_SECONDS / (60 * 60);
     if (
       lastCheckpointOn &&
-      today - new Date(lastCheckpointOn) < GAP_BETWEEN_POSTS_MILLISECONDS
+      today - new Date(lastCheckpointOn) < GAP_BETWEEN_POSTS_SECONDS * 1000
     ) {
       console.log(
         `Previous post checkpoint is ${lastCheckpointOn}, less than ${GAP_BETWEEN_POSTS_HOURS}hrs have passed since the checkpoint post.`
@@ -68,11 +67,14 @@ test("Create a new post", async ({ page }) => {
 
     // Detect if login storage load was successful
     try {
-      await page.getByRole("link", { name: "New post Create" }).click({timeout: 3000});
+      await page
+        .getByRole("link", { name: "New post Create" })
+        .click({ timeout: 3000 });
       console.log(`Create post option visible. Continuing...`);
     } catch (e) {
       console.log(`Login session might have expired. Please login again.`);
       await page.screenshot({
+        path: `${SCREENSHOTS_DIRECTORY}/create-post-login-expired.png`,
         path: "photos/create-post-login-expired.png",
         fullPage: true,
       });
@@ -129,24 +131,26 @@ test("Create a new post", async ({ page }) => {
     await page.goto(INSTAGRAM_PROFILE_URL);
     await page.waitForLoadState("networkidle");
     console.log(
-      `Saving profile screenshot at: ${PROFILE_SCREENSHOT_PATH}/profile-after-post.png`
+      `Saving profile screenshot at: ${SCREENSHOTS_DIRECTORY}/profile-after-post.png`
     );
-    // fixed path for cron
+
+    // Override a shared screenshot location
     await page.screenshot({
-      path: `${PROFILE_SCREENSHOT_PATH}/profile-after-post.png`,
+      path: `${SCREENSHOTS_DIRECTORY}/profile-after-post.png`,
       fullPage: true,
     });
 
     // include post-time for record keeping
     await page.screenshot({
-      path: `${PROFILE_SCREENSHOT_PATH}/profile-${today}.png`,
+      path: `${SCREENSHOTS_DIRECTORY}/profile-${today.toISOString()}.png`,
       fullPage: true,
     });
 
-    console.log(`Saving logged in session to: ${LOGIN_STORAGE_PATH}`);
-    await page.context().storageState({
-      path: LOGIN_STORAGE_PATH,
-    });
+    // TODO: updated auth.json is expiring quickly since around 15 Sept 2023 -
+    // console.log(`Saving logged in session to: ${LOGIN_STORAGE_PATH}`);
+    // await page.context().storageState({
+    //   path: LOGIN_STORAGE_PATH,
+    // });
     await page.waitForTimeout(getRandomTimeout());
   }
 });

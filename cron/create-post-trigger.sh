@@ -5,13 +5,13 @@ set -ex
 
 # Config
 INSTAGRAM_PLAYWRIGHT_PATH="$HOME/Personals/instagram-playwright"
-OSA_SCRIPT_PROFILE_AFTER_POST_PATH="Macintosh HD:Users:$USER:Personals:instagram-playwright:photos:profile-after-post.png"
+MIN_HOURS_BETWEEN_TRIGGERS="4"
+OSA_SCRIPT_PROFILE_AFTER_POST_PATH="Macintosh HD:Users:$USER:Personals:instagram-playwright:local:screenshots:profile-after-post.png"
 
 # Note: exclude these paths using .gitignore
-CREATE_POST_LOGS_RELATIVE_PATH="cron/create-post.log"
-CRON_TRIGGERS_PATH="$INSTAGRAM_PLAYWRIGHT_PATH/cron/cron-triggers.log"
+CREATE_POST_LOGS_RELATIVE_PATH="cron/yarn-create-post.log"
+CRON_TRIGGERS_PATH="$INSTAGRAM_PLAYWRIGHT_PATH/cron/create-post-cron-triggers.log"
 
-MIN_HOURS_BETWEEN_TRIGGERS="4"
 MIN_SECONDS_FOR_SCRIPT_SUCCESS="20"
 LOG_DATE_FORMAT='%Y-%m-%d %H:%M:%S%z'
 LOG_CRON_SUCCESS_TIME_PREFIX='Ran cron successfully at: '
@@ -55,7 +55,7 @@ else
 fi
 
 cd $INSTAGRAM_PLAYWRIGHT_PATH
-_sys_notify "Instagram Job: triggered" "Date and time: $(date)"
+_sys_notify "Instagram Create Post: triggered" "Date and time: $(date)"
 
 tee_log_create_post ""
 tee_log_create_post "[ ]========================= $(date +"$LOG_DATE_FORMAT") =========================== "
@@ -68,16 +68,16 @@ TIME_FOR_SCRIPT=$((SCRIPT_END_EPOCH - SCRIPT_START_EPOCH))
 
 if [[ "$RET" == "0" ]]; then
     if [[ "$TIME_FOR_SCRIPT" -lt "$MIN_SECONDS_FOR_SCRIPT_SUCCESS" ]]; then
-        _sys_notify "Instagram Job: Already Posted or Login Error"
+        _sys_notify "Instagram Create Post: Finished Early" "Ignore if already posted, check logs for more details."
         exit 0
     else
-        _sys_notify "Instagram Job: Completed" "Date and time: $(date +"$LOG_DATE_FORMAT"). Check logs at $CREATE_POST_LOGS_RELATIVE_PATH"
+        _sys_notify "Instagram Create Post: Completed" "Date and time: $(date +"$LOG_DATE_FORMAT"). Check logs at $CREATE_POST_LOGS_RELATIVE_PATH"
         osascript -e 'tell application "Finder"' -e "open file \"$OSA_SCRIPT_PROFILE_AFTER_POST_PATH\"" -e 'end tell'
         # Update successful run date and time-
         echo "$LOG_CRON_SUCCESS_TIME_PREFIX$(date +"$LOG_DATE_FORMAT")" >>"$CRON_TRIGGERS_PATH"
     fi
 else
-    _sys_notify "Instagram Job: Error Code: $RET" "Date and time: $(date). Check logs at $CREATE_POST_LOGS_RELATIVE_PATH"
+    _sys_notify "Instagram Create Post: Error Code: $RET" "Date and time: $(date). Check logs at $CREATE_POST_LOGS_RELATIVE_PATH"
 fi
 
 tee_log_create_post "[/]========================= $(date +"$LOG_DATE_FORMAT") =========================== "

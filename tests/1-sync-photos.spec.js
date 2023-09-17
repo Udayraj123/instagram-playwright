@@ -1,7 +1,7 @@
 import { test } from "@playwright/test";
-import { PHOTOS_ALBUM_PUBLIC_URL } from "../.env";
+import { PHOTOS_ALBUM_PUBLIC_URL } from "../local/data/.env";
 import fs from "fs";
-import { SAVE_PHOTOS_DIRECTORY, MAX_PHOTOS_SYNC } from "./constants";
+import { LOCAL_PHOTOS_DIRECTORY, MAX_PHOTOS_SYNC } from "./constants";
 import {
   loadSyncData,
   saveSyncData,
@@ -11,11 +11,11 @@ import {
 import cloneDeep from "lodash.clonedeep";
 
 const getFilepathFromUrl = (photoUrl, ext, index) => {
-  return `${SAVE_PHOTOS_DIRECTORY}/${index}-${photoUrl
+  return `${LOCAL_PHOTOS_DIRECTORY}/${index}-${photoUrl
     .replace("https://lh3.googleusercontent.com/pw/", "")
     .slice(0, 10)}.${ext}`;
 };
-test.setTimeout(240000);
+test.setTimeout(10000000);
 
 const downloadPhoto = async (photoUrl, index) => {
   const response = await fetch(photoUrl);

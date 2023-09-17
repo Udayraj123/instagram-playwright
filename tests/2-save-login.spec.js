@@ -1,9 +1,9 @@
 import { test } from "@playwright/test";
-import { LOGIN_STORAGE_PATH } from "./constants";
-import { INSTAGRAM_USERNAME, INSTAGRAM_PASSWORD } from "../.env";
+import { LOGIN_STORAGE_PATH, SCREENSHOTS_DIRECTORY } from "./constants";
+import { INSTAGRAM_USERNAME, INSTAGRAM_PASSWORD } from "../local/data/.env";
 import { getRandomTimeout } from "./utils";
 import fs from "fs";
-test.setTimeout(120000);
+test.setTimeout(240000);
 
 test("Login to instagram", async ({ page }) => {
   if (fs.existsSync(LOGIN_STORAGE_PATH)) {
@@ -32,9 +32,17 @@ test("Login to instagram", async ({ page }) => {
   await page.waitForTimeout(getRandomTimeout());
   await page.getByRole("button", { name: "Log in", exact: true }).click();
 
+  const today = new Date();
   try {
     await page.waitForURL("**/challenge/**", { timeout: 3000 });
-    await page.screenshot({ path: "photos/login-captcha.png", fullPage: true });
+    await page.screenshot({
+      path: `${SCREENSHOTS_DIRECTORY}/login-captcha.png`,
+      fullPage: true,
+    });
+    await page.screenshot({
+      path: `${SCREENSHOTS_DIRECTORY}/login-captcha-${today.toISOString()}.png`,
+      fullPage: true,
+    });
     console.log(`Captcha page detected. Aborting...`);
     return;
   } catch (e) {
@@ -63,7 +71,18 @@ test("Login to instagram", async ({ page }) => {
       promptCount -= 1;
     }
   }
+  await page.waitForLoadState("networkidle");
 
-  await page.screenshot({ path: "photos/login.png", fullPage: true });
+  // Override a shared screenshot location
+  await page.screenshot({
+    path: `${SCREENSHOTS_DIRECTORY}/login.png`,
+    fullPage: true,
+  });
+
+  // One more screenshot with timestamp for record keeping
+  await page.screenshot({
+    path: `${SCREENSHOTS_DIRECTORY}/login-${today.toISOString()}.png`,
+    fullPage: true,
+  });
   console.log("All done, check the screenshot. ✨");
 });

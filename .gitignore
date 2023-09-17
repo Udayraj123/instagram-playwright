@@ -6,15 +6,23 @@
 # Misc
 **/.DS_Store
 
-.env
-.env.js
 **/node_modules
 /test-results/
 /playwright-report/
 /playwright/.cache/
 
 **/auth.json
-photos/*
-!photos/.gitkeep
+**/auth.backup.json
+
+# Photos + data folder
+local/photos/*.*
+!local/photos/.gitkeep
+
+local/data/*.*
+!local/data/.gitkeep
+!local/data/.env.example.js
+
+local/screenshots/*.*
+!local/screenshots/.gitkeep
 
 **/*.log

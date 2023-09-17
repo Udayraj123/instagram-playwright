@@ -1,8 +1,14 @@
-export const PHOTOS_DATA_PATH = "photos/data.json";
-export const SAVE_PHOTOS_DIRECTORY = "photos";
-export const MAX_PHOTOS_SYNC = 1000;
+// Local files config
+// Note: you may need to update the same variable(s) in cron triggers
+export const LOGIN_STORAGE_PATH = "local/data/auth.json";
+export const PHOTOS_DATA_PATH = "local/data/sync.json";
+export const SCREENSHOTS_DIRECTORY = "local/screenshots";
+export const LOCAL_PHOTOS_DIRECTORY = "local/photos";
+
+// Sync configuration
+export const MAX_PHOTOS_SYNC = 1500;
+
+// Posts configuration
 export const MAX_PHOTOS_IN_POST = 1;
-export const POSTS_PER_DAY = 5;
-export const LOGIN_STORAGE_PATH = "auth.json";
-export const GAP_BETWEEN_POSTS_MILLISECONDS = 0.125 * 1000 * 60 * 60 * 24;
-export const PROFILE_SCREENSHOT_PATH = "photos/";
+export const POSTS_PER_TRIGGER = 5;
+export const GAP_BETWEEN_POSTS_SECONDS = 0.125 * 24 * 60 * 60;
