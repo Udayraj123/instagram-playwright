@@ -7,7 +7,7 @@ import {
   POSTS_PER_TRIGGER,
   SCREENSHOTS_DIRECTORY,
 } from "./constants";
-import { INSTAGRAM_PROFILE_URL } from "../local/data/.env";
+import { DEFAULT_POST_CAPTION, INSTAGRAM_PROFILE_URL } from "../local/data/.env";
 import { loadSyncData, saveSyncData, downloadPhoto, getRandomTimeout } from "./utils";
 import cloneDeep from "lodash.clonedeep";
 test.setTimeout(240000);
@@ -47,47 +47,41 @@ test("Create a new post", async ({ page }) => {
     console.log(`Filtering out unposted photos...`);
     const photosToPost = [];
 
-    photosOrder.forEach((photoUrl) => {
-      const { postedOn, filepath } = syncStatus[photoUrl];
+    for (const photoUrl of photosOrder) {
+      const { postedOn, filepath, photoIndex } = syncStatus[photoUrl];
       if (!postedOn && photosToPost.length < MAX_PHOTOS_IN_POST) {
         photosToPost.push(photoUrl);
         console.log({ photoUrl, syncStatus: syncStatus[photoUrl] });
+
+        // Download missing files( except error files)
+        if (!fs.existsSync(filepath)) {
+          console.log(`Note: Photo does not exist locally at: ${filepath}`)
+          console.log(`Downloading again from ${photoUrl}`);
+          const downloadPath = await downloadPhoto(photoUrl, photoIndex);
+          if (filepath === null) {
+            console.log(`Note: [Unexpected] file not recognized, skipping this post`);
+            continue;
+          }
+          syncStatus[photoUrl].downloadedOn = today;
+          if (downloadPath != filepath) {
+            console.log(`Note: [Unexpected] Updating new filepath for photo: ${filepath} -> ${downloadPath}`);
+            syncStatus[photoUrl].filepath = downloadPath;
+          }
+          console.log(`Downloaded photo at ${downloadPath}.`);
+
+          saveSyncData({
+            ...currentSyncData,
+            syncStatus,
+            meta: currentMeta
+          });
+        }
       }
-    });
+    }
 
     if (photosToPost.length === 0) {
       console.log(`No photos left to post!`);
       return;
     }
-
-    // Download missing files 
-    for (const photoUrl of photosToPost) {
-      const { filepath, photoIndex } = syncStatus[photoUrl];
-      if (!fs.existsSync(filepath)) {
-        console.log(`Note: Photo does not exist locally at: ${filepath}`)
-        console.log(`Downloading again from ${photoUrl}`);
-        const downloadPath = await downloadPhoto(photoUrl, photoIndex);
-        syncStatus[photoUrl].downloadedOn = today;
-        if (downloadPath != filepath) {
-          console.log(`Note: [Unexpected] Updating new filepath for photo: ${filepath} -> ${downloadPath}`);
-          syncStatus[photoUrl].filepath = downloadPath;
-        }
-        console.log(`Downloaded photo at ${downloadPath}.`);
-        saveSyncData({
-          ...currentSyncData,
-          syncStatus,
-          meta: currentMeta
-        });
-      }
-    }
-
-    const filesToPost = photosToPost.map(photoUrl => syncStatus[photoUrl].filepath)
-    console.log({ filesToPost });
-
-    // Pre-commit posted-on date (revert later if error)
-    photosToPost.forEach((photoUrl) => {
-      syncStatus[photoUrl].postedOn = today;
-    });
 
     console.log("Loading instagram profile page...");
     await page.goto(INSTAGRAM_PROFILE_URL);
@@ -115,7 +109,9 @@ test("Create a new post", async ({ page }) => {
     // Start waiting for file chooser before clicking. Note no await.
     const fileChooserPromise = page.waitForEvent("filechooser");
     await page.getByRole("button", { name: "Select From Computer" }).click();
+
     const fileChooser = await fileChooserPromise;
+    const filesToPost = photosToPost.map(photoUrl => syncStatus[photoUrl].filepath);
     await fileChooser.setFiles(filesToPost);
 
     await page.waitForTimeout(getRandomTimeout());
@@ -128,14 +124,18 @@ test("Create a new post", async ({ page }) => {
     await page.getByRole("paragraph").click();
     await page
       .getByLabel("Write a caption...")
-      .type("#flowers #home #decoration #flowerdecoration #floatingflowers", {
+      .type(DEFAULT_POST_CAPTION, {
         delay: 50,
       });
 
     await page.waitForTimeout(getRandomTimeout());
     console.log("Submitting the post...");
     await page.getByRole("button", { name: "Share" }).click();
+
     console.log("Saving updated photos data...");
+    photosToPost.forEach((photoUrl) => {
+      syncStatus[photoUrl].postedOn = today;
+    });
     saveSyncData({
       ...currentSyncData,
       syncStatus,
@@ -149,8 +149,9 @@ test("Create a new post", async ({ page }) => {
       const successLocator = page.getByText("Post shared");
       await successLocator.waitFor({ timeout: 10000 });
     } catch (e) {
-      console.log("Reverting photos data due to error...", e);
-      saveSyncData(currentSyncData);
+      console.log("Note: Error finding the success indicator", e);
+      console.log(`Check sync status manually for these urls: ${photosToPost}`)
+      // saveSyncData(currentSyncData);
     }
     console.log("Post shared...");
     await page.getByRole("button", { name: "Close" }).click();
