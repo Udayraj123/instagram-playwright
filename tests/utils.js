@@ -1,13 +1,35 @@
-import { PHOTOS_DATA_PATH } from "./constants";
 import fs from "fs";
+import { PHOTOS_DATA_PATH, LOCAL_PHOTOS_DIRECTORY } from "./constants";
+
 export const saveSyncData = (updatedPhotosData) => {
   fs.writeFileSync(
     PHOTOS_DATA_PATH,
     JSON.stringify(updatedPhotosData, null, 2)
   );
-  console.log(`written updated photos data to: ${PHOTOS_DATA_PATH}`);
+  console.log(`Wrote updated photos data to: ${PHOTOS_DATA_PATH}`);
+};
+const getFilepathFromUrl = (photoUrl, ext, index) => {
+  return `${LOCAL_PHOTOS_DIRECTORY}/${index}-${photoUrl
+    .replace("https://lh3.googleusercontent.com/pw/", "")
+    .slice(0, 10)}.${ext}`;
 };
 
+export const downloadPhoto = async (photoUrl, index) => {
+  const response = await fetch(photoUrl);
+  const arrayBuffer = await response.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+  const fileType = await getMimeTypeFromArrayBuffer(buffer);
+  if (fileType.ext) {
+    const filepath = getFilepathFromUrl(photoUrl, fileType.ext, index);
+    fs.createWriteStream(filepath).write(buffer);
+    return filepath;
+  } else {
+    console.log(
+      "File type could not be reliably determined! The binary data may be malformed! No file saved!"
+    );
+    return null;
+  }
+};
 export const loadSyncData = async () => {
   if (fs.existsSync(PHOTOS_DATA_PATH)) {
     console.log("Loading existing photos data...");

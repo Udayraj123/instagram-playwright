@@ -1,39 +1,14 @@
 import { test } from "@playwright/test";
 import { PHOTOS_ALBUM_PUBLIC_URL } from "../local/data/.env";
-import fs from "fs";
-import { LOCAL_PHOTOS_DIRECTORY, MAX_PHOTOS_SYNC } from "./constants";
+import { MAX_PHOTOS_SYNC } from "./constants";
 import {
   loadSyncData,
   saveSyncData,
-  getMimeTypeFromArrayBuffer,
   getDifference,
+  downloadPhoto,
 } from "./utils";
 import cloneDeep from "lodash.clonedeep";
-
-const getFilepathFromUrl = (photoUrl, ext, index) => {
-  return `${LOCAL_PHOTOS_DIRECTORY}/${index}-${photoUrl
-    .replace("https://lh3.googleusercontent.com/pw/", "")
-    .slice(0, 10)}.${ext}`;
-};
 test.setTimeout(10000000);
-
-const downloadPhoto = async (photoUrl, index) => {
-  const response = await fetch(photoUrl);
-  const arrayBuffer = await response.arrayBuffer();
-  const buffer = Buffer.from(arrayBuffer);
-  const fileType = await getMimeTypeFromArrayBuffer(buffer);
-  if (fileType.ext) {
-    const filepath = getFilepathFromUrl(photoUrl, fileType.ext, index);
-    fs.createWriteStream(filepath).write(buffer);
-    return filepath;
-  } else {
-    console.log(
-      "File type could not be reliably determined! The binary data may be malformed! No file saved!"
-    );
-    return null;
-  }
-};
-
 test("Sync new images from photos album", async ({ page }) => {
   const currentSyncData = await loadSyncData();
   const { photosOrder } = cloneDeep(currentSyncData);
@@ -154,8 +129,7 @@ test("Sync new images from photos album", async ({ page }) => {
     });
 
     console.log(
-      `Saving updated photos data... Photos count: ${
-        photosOrder.length
+      `Saving updated photos data... Photos count: ${photosOrder.length
       }/${MAX_PHOTOS_SYNC} (${Math.round(
         (100 * photosOrder.length) / MAX_PHOTOS_SYNC
       )}%)`

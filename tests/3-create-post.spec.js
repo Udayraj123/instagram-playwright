@@ -1,4 +1,5 @@
 import { test } from "@playwright/test";
+import fs from "fs";
 import {
   GAP_BETWEEN_POSTS_SECONDS,
   LOGIN_STORAGE_PATH,
@@ -7,7 +8,7 @@ import {
   SCREENSHOTS_DIRECTORY,
 } from "./constants";
 import { INSTAGRAM_PROFILE_URL } from "../local/data/.env";
-import { loadSyncData, saveSyncData, getRandomTimeout } from "./utils";
+import { loadSyncData, saveSyncData, downloadPhoto, getRandomTimeout } from "./utils";
 import cloneDeep from "lodash.clonedeep";
 test.setTimeout(240000);
 test.use({
@@ -49,17 +50,45 @@ test("Create a new post", async ({ page }) => {
     photosOrder.forEach((photoUrl) => {
       const { postedOn, filepath } = syncStatus[photoUrl];
       if (!postedOn && photosToPost.length < MAX_PHOTOS_IN_POST) {
-        photosToPost.push(filepath);
+        photosToPost.push(photoUrl);
         console.log({ photoUrl, syncStatus: syncStatus[photoUrl] });
-        syncStatus[photoUrl].postedOn = today;
       }
     });
-    console.log({ photosToPost });
 
     if (photosToPost.length === 0) {
       console.log(`No photos left to post!`);
       return;
     }
+
+    // Download missing files 
+    for (const photoUrl of photosToPost) {
+      const { filepath, photoIndex } = syncStatus[photoUrl];
+      if (!fs.existsSync(filepath)) {
+        console.log(`Note: Photo does not exist locally at: ${filepath}`)
+        console.log(`Downloading again from ${photoUrl}`);
+        const downloadPath = await downloadPhoto(photoUrl, photoIndex);
+        syncStatus[photoUrl].downloadedOn = today;
+        if (downloadPath != filepath) {
+          console.log(`Note: [Unexpected] Updating new filepath for photo: ${filepath} -> ${downloadPath}`);
+          syncStatus[photoUrl].filepath = downloadPath;
+        }
+        console.log(`Downloaded photo at ${downloadPath}.`);
+        saveSyncData({
+          ...currentSyncData,
+          syncStatus,
+          meta: currentMeta
+        });
+      }
+    }
+
+    const filesToPost = photosToPost.map(photoUrl => syncStatus[photoUrl].filepath)
+    console.log({ filesToPost });
+
+    // Pre-commit posted-on date (revert later if error)
+    photosToPost.forEach((photoUrl) => {
+      syncStatus[photoUrl].postedOn = today;
+    });
+
     console.log("Loading instagram profile page...");
     await page.goto(INSTAGRAM_PROFILE_URL);
 
@@ -87,7 +116,7 @@ test("Create a new post", async ({ page }) => {
     const fileChooserPromise = page.waitForEvent("filechooser");
     await page.getByRole("button", { name: "Select From Computer" }).click();
     const fileChooser = await fileChooserPromise;
-    await fileChooser.setFiles(photosToPost);
+    await fileChooser.setFiles(filesToPost);
 
     await page.waitForTimeout(getRandomTimeout());
     await page.getByRole("button", { name: "Next" }).click();
