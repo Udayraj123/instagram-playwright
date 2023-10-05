@@ -68,10 +68,10 @@ TIME_FOR_SCRIPT=$((SCRIPT_END_EPOCH - SCRIPT_START_EPOCH))
 
 if [[ "$RET" == "0" ]]; then
     if [[ "$TIME_FOR_SCRIPT" -lt "$MIN_SECONDS_FOR_SCRIPT_SUCCESS" ]]; then
-        _sys_notify "Instagram Create Post: Finished Early" "Ignore if already posted, check logs for more details."
+        _sys_notify "Instagram Create Post: Finished in "$TIME_FOR_SCRIPT"s" "Ignore if already posted, check logs for more details."
         exit 0
     else
-        _sys_notify "Instagram Create Post: Completed" "Date and time: $(date +"$LOG_DATE_FORMAT"). Check logs at $CREATE_POST_LOGS_RELATIVE_PATH"
+        _sys_notify "Instagram Create Post: Completed in "$TIME_FOR_SCRIPT"s" "Date and time: $(date +"$LOG_DATE_FORMAT"). Check logs at $CREATE_POST_LOGS_RELATIVE_PATH"
         osascript -e 'tell application "Finder"' -e "open file \"$OSA_SCRIPT_PROFILE_AFTER_POST_PATH\"" -e 'end tell'
         # Update successful run date and time-
         echo "$LOG_CRON_SUCCESS_TIME_PREFIX$(date +"$LOG_DATE_FORMAT")" >>"$CRON_TRIGGERS_PATH"

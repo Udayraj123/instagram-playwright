@@ -6,7 +6,7 @@ set -ex
 # Config
 INSTAGRAM_PLAYWRIGHT_PATH="$HOME/Personals/instagram-playwright"
 LOGIN_STORAGE_PATH="local/data/auth.json"
-MIN_HOURS_BETWEEN_TRIGGERS="48"
+MIN_HOURS_BETWEEN_TRIGGERS="12"
 
 # Note: exclude these paths using .gitignore
 SAVE_LOGIN_LOGS_RELATIVE_PATH="cron/yarn-save-login.log"
@@ -61,7 +61,7 @@ tee_log_save_login ""
 tee_log_save_login "[ ]========================= $(date +"$LOG_DATE_FORMAT") =========================== "
 tee_log_save_login "Running cron at: $(date +"$LOG_DATE_FORMAT")"
 
-mv "$LOGIN_STORAGE_PATH" "$LOGIN_STORAGE_PATH.backup"
+test -e "$LOGIN_STORAGE_PATH" && mv "$LOGIN_STORAGE_PATH" "$LOGIN_STORAGE_PATH.backup"
 yarn save-login | tee -a "$SAVE_LOGIN_LOGS_RELATIVE_PATH"
 RET=$PIPESTATUS
 SCRIPT_END_EPOCH=$(date +%s)
@@ -78,6 +78,7 @@ if [[ "$RET" == "0" ]]; then
     fi
 else
     _sys_notify "Instagram Save Login: Error Code: $RET" "Date and time: $(date). Check logs at $SAVE_LOGIN_LOGS_RELATIVE_PATH"
+    test -e "$LOGIN_STORAGE_PATH.backup" && mv "$LOGIN_STORAGE_PATH.backup" "$LOGIN_STORAGE_PATH"
 fi
 
 tee_log_save_login "[/]========================= $(date +"$LOG_DATE_FORMAT") =========================== "

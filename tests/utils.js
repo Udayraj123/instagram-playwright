@@ -1,4 +1,5 @@
 import fs from "fs";
+
 import { PHOTOS_DATA_PATH, LOCAL_PHOTOS_DIRECTORY } from "./constants";
 
 export const saveSyncData = (updatedPhotosData) => {
@@ -30,6 +31,7 @@ export const downloadPhoto = async (photoUrl, index) => {
     return null;
   }
 };
+
 export const loadSyncData = async () => {
   if (fs.existsSync(PHOTOS_DATA_PATH)) {
     console.log("Loading existing photos data...");

@@ -7,8 +7,16 @@ import {
   POSTS_PER_TRIGGER,
   SCREENSHOTS_DIRECTORY,
 } from "./constants";
-import { DEFAULT_POST_CAPTION, INSTAGRAM_PROFILE_URL } from "../local/data/.env";
-import { loadSyncData, saveSyncData, downloadPhoto, getRandomTimeout } from "./utils";
+import {
+  DEFAULT_POST_CAPTION,
+  INSTAGRAM_PROFILE_URL,
+} from "../local/data/.env";
+import {
+  loadSyncData,
+  saveSyncData,
+  downloadPhoto,
+  getRandomTimeout,
+} from "./utils";
 import cloneDeep from "lodash.clonedeep";
 test.setTimeout(240000);
 test.use({
@@ -50,21 +58,25 @@ test("Create a new post", async ({ page }) => {
     for (const photoUrl of photosOrder) {
       const { postedOn, filepath, photoIndex } = syncStatus[photoUrl];
       if (!postedOn && photosToPost.length < MAX_PHOTOS_IN_POST) {
-        photosToPost.push(photoUrl);
         console.log({ photoUrl, syncStatus: syncStatus[photoUrl] });
-
+        if (filepath === null) {
+          console.log(
+            `Note: [Unexpected] file not recognized, skipping this post`
+          );
+          continue;
+        }
+        photosToPost.push(photoUrl);
         // Download missing files( except error files)
         if (!fs.existsSync(filepath)) {
-          console.log(`Note: Photo does not exist locally at: ${filepath}`)
+          console.log(`Note: Photo does not exist locally at: ${filepath}`);
           console.log(`Downloading again from ${photoUrl}`);
           const downloadPath = await downloadPhoto(photoUrl, photoIndex);
-          if (filepath === null) {
-            console.log(`Note: [Unexpected] file not recognized, skipping this post`);
-            continue;
-          }
+
           syncStatus[photoUrl].downloadedOn = today;
           if (downloadPath != filepath) {
-            console.log(`Note: [Unexpected] Updating new filepath for photo: ${filepath} -> ${downloadPath}`);
+            console.log(
+              `Note: [Unexpected] Updating new filepath for photo: ${filepath} -> ${downloadPath}`
+            );
             syncStatus[photoUrl].filepath = downloadPath;
           }
           console.log(`Downloaded photo at ${downloadPath}.`);
@@ -72,7 +84,7 @@ test("Create a new post", async ({ page }) => {
           saveSyncData({
             ...currentSyncData,
             syncStatus,
-            meta: currentMeta
+            meta: currentMeta,
           });
         }
       }
@@ -82,6 +94,7 @@ test("Create a new post", async ({ page }) => {
       console.log(`No photos left to post!`);
       return;
     }
+    console.log({ photosToPost });
 
     console.log("Loading instagram profile page...");
     await page.goto(INSTAGRAM_PROFILE_URL);
@@ -98,7 +111,6 @@ test("Create a new post", async ({ page }) => {
       console.log(`Login session might have expired. Please login again.`);
       await page.screenshot({
         path: `${SCREENSHOTS_DIRECTORY}/create-post-login-expired.png`,
-        path: "photos/create-post-login-expired.png",
         fullPage: true,
       });
       return;
@@ -111,7 +123,9 @@ test("Create a new post", async ({ page }) => {
     await page.getByRole("button", { name: "Select From Computer" }).click();
 
     const fileChooser = await fileChooserPromise;
-    const filesToPost = photosToPost.map(photoUrl => syncStatus[photoUrl].filepath);
+    const filesToPost = photosToPost.map(
+      (photoUrl) => syncStatus[photoUrl].filepath
+    );
     await fileChooser.setFiles(filesToPost);
 
     await page.waitForTimeout(getRandomTimeout());
@@ -122,16 +136,15 @@ test("Create a new post", async ({ page }) => {
 
     await page.waitForTimeout(getRandomTimeout());
     await page.getByRole("paragraph").click();
-    await page
-      .getByLabel("Write a caption...")
-      .type(DEFAULT_POST_CAPTION, {
-        delay: 50,
-      });
+    await page.getByLabel("Write a caption...").type(DEFAULT_POST_CAPTION, {
+      delay: 50,
+    });
 
     await page.waitForTimeout(getRandomTimeout());
     console.log("Submitting the post...");
     await page.getByRole("button", { name: "Share" }).click();
 
+    // Save metadata once Share is clicked
     console.log("Saving updated photos data...");
     photosToPost.forEach((photoUrl) => {
       syncStatus[photoUrl].postedOn = today;
@@ -145,17 +158,31 @@ test("Create a new post", async ({ page }) => {
         checkpoints: [...currentCheckpoints, today],
       },
     });
+
+    // TODO: updated auth.json is expiring quickly since around 15 Sept 2023 -
+    // console.log(`Saving logged in session to: ${LOGIN_STORAGE_PATH}`);
+    // await page.context().storageState({
+    //   path: LOGIN_STORAGE_PATH,
+    // });
+    // Case of reverting saved data due to any error
     try {
       const successLocator = page.getByText("Post shared");
       await successLocator.waitFor({ timeout: 10000 });
     } catch (e) {
       console.log("Note: Error finding the success indicator", e);
-      console.log(`Check sync status manually for these urls: ${photosToPost}`)
+      console.log(`Check sync status manually for these urls: ${photosToPost}`);
+      // include post-time for record keeping
+      await page.screenshot({
+        path: `${SCREENSHOTS_DIRECTORY}/post-shared-error-${today.toISOString()}.png`,
+        fullPage: true,
+      });
       // saveSyncData(currentSyncData);
     }
+
     console.log("Post shared...");
     await page.getByRole("button", { name: "Close" }).click();
 
+    // Save screenshots after posting
     await page.waitForTimeout(getRandomTimeout());
     console.log("Loading instagram profile page...");
     await page.goto(INSTAGRAM_PROFILE_URL);
@@ -176,11 +203,6 @@ test("Create a new post", async ({ page }) => {
       fullPage: true,
     });
 
-    // TODO: updated auth.json is expiring quickly since around 15 Sept 2023 -
-    // console.log(`Saving logged in session to: ${LOGIN_STORAGE_PATH}`);
-    // await page.context().storageState({
-    //   path: LOGIN_STORAGE_PATH,
-    // });
     await page.waitForTimeout(getRandomTimeout());
   }
 });
